@@ -1,7 +1,7 @@
 openapi: "3.0.3"
 info:
   title: "Orizn Visa API"
-  description: "Visa and entry requirements for 49,750 passport-destination pairs (199 passports x 250 destinations) in 15 languages, with official source URLs."
+  description: "Visa and entry requirements for 49,750 passport-destination pairs (199 passports x 250 destinations) in 15 languages, with official source URLs where available."
   version: "1.0.0"
 servers:
   - url: "https://visa.orizn.app"
@@ -10,7 +10,9 @@ paths:
     get:
       operationId: "quickVisaCheck"
       summary: "Quick check if a visa is required between two countries"
-      description: "Returns the visa requirement type and allowed stay duration. No API key needed."
+      description: "Returns the visa requirement type and allowed stay duration. Requires an API key (free key, 100 requests/month)."
+      security:
+        - ApiKeyAuth: []
       parameters:
         - name: passport
           in: query
@@ -34,26 +36,30 @@ paths:
               schema:
                 type: object
                 properties:
-                  data:
-                    type: object
-                    properties:
-                      passport:
-                        type: string
-                        description: "Passport country code"
-                      destination:
-                        type: string
-                        description: "Destination country code"
-                      requirement:
-                        type: string
-                        enum: [visa_free, visa_required, e_visa, visa_on_arrival, eta, no_admission]
-                        description: "Visa requirement type"
-                      visa_free_days:
-                        type: integer
-                        nullable: true
-                        description: "Number of visa-free days allowed, if applicable"
-                      visa_required:
-                        type: boolean
-                        description: "Whether a visa is required"
+                  passport:
+                    type: string
+                    description: "Passport country code"
+                  destination:
+                    type: string
+                    description: "Destination country code"
+                  requirement:
+                    type: string
+                    enum: [visa_free, visa_required, e_visa, visa_on_arrival, eta, no_admission, not_applicable, partial_restrictions, admission_refused, special]
+                    description: "Visa requirement type"
+                  visa_free_days:
+                    type: integer
+                    nullable: true
+                    description: "Number of visa-free days allowed, if applicable"
+                  visa_required:
+                    type: boolean
+                    description: "Whether a visa is required"
+                  last_verified:
+                    type: string
+                    format: date
+                    nullable: true
+                    description: "Date the pair was last checked against its official source, if it has been"
+        "401":
+          description: "Missing API key"
         "404":
           description: "Country pair not found"
   /api/v1/visa:
@@ -103,7 +109,7 @@ paths:
                         type: string
                       requirement:
                         type: string
-                        enum: [visa_free, visa_required, e_visa, visa_on_arrival, eta, no_admission]
+                        enum: [visa_free, visa_required, e_visa, visa_on_arrival, eta, no_admission, not_applicable, partial_restrictions, admission_refused, special]
                       visa_free_days:
                         type: integer
                         nullable: true
@@ -140,6 +146,14 @@ paths:
                             type: string
                       verified:
                         type: boolean
+                      source_url:
+                        type: string
+                        nullable: true
+                        description: "Official source for this pair, when one has been recorded"
+                      last_verified_at:
+                        type: string
+                        nullable: true
+                        description: "When the pair was last checked against its official source; null if not yet re-verified"
                   meta:
                     type: object
                     properties:
